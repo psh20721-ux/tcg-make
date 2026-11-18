@@ -10,7 +10,7 @@
 | 로컬 브라우저 검증 | 통과, evidence/browser-results.json |
 | PC/태블릿/모바일 | 1440/768/390px, 4개 메뉴 넘침 없음 |
 | 기존 프로젝트 보존 | 48개 파일 SHA-256 일치 |
-| 실제 OpenAI 호출 | 미검증: 키 미설정 |
+| 실제 Google Gemini 호출 | 미검증: 키 미설정 |
 | GitHub 업로드 | 사용자가 Codespaces에서 진행 예정 |
 | Vercel 공개 배포/공개 URL | 미수행 |
 
@@ -26,7 +26,7 @@
 
 ## 한계와 재검증
 
-모의 제공자 검증은 실제 OpenAI 계정·모델 권한·유료 API 성공 검증이 아닙니다. 키를 설정한 뒤 실제 상담을 실행하고, Vercel 배포 후 공개 주소에서 같은 경로를 다시 확인해야 제출 완료입니다. AI 자연어 설명의 사실성도 별도 검수가 필요합니다.
+모의 제공자 검증은 실제 Google Gemini 계정·모델 권한·유료 API 성공 검증이 아닙니다. 키를 설정한 뒤 실제 상담을 실행하고, Vercel 배포 후 공개 주소에서 같은 경로를 다시 확인해야 제출 완료입니다. AI 자연어 설명의 사실성도 별도 검수가 필요합니다.
 
 ## 실행 명령
 
@@ -36,3 +36,8 @@ node --check public/js/app.js
 python -m compileall -q api backend scripts
 node scripts/browser-test.mjs
 ```
+
+## Gemini 전환 검증 · 2026-11-18
+
+Python/API 테스트 17개 통과. Gemini REST 요청과 JSON 응답, 차단·잘림·429·인증 오류, 기존 카드 수량 보존을 모의 응답으로 검증했습니다. 실제 Gemini 키 호출은 Codespaces에서 확인해야 합니다. 기존 스크린샷은 전환 전 자료이므로 제출 시 다시 촬영하세요.
+
