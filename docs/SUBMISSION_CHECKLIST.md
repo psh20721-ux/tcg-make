@@ -25,7 +25,7 @@
 - `mobile-home.png`: 모바일 홈.
 - `mobile-decks.png`: 모바일 덱 목록.
 - `ai-not-configured.png`: 실제 API 키 미설정 시 503 오류 안내 화면.
-- `ai-mock-flow.png`: **검증용 모의 API 응답**, 실제 OpenAI 호출 아님. 화면에도 표시.
+- `ai-mock-flow.png`: **검증용 모의 API 응답**, 실제 Google Gemini 호출 아님. 화면에도 표시.
 
 실제 AI 호출을 한 뒤 키·개인정보 없이 새 스크린샷을 제출 패키지에 추가해야 합니다. `.gitignore`에서 `live-*`를 기본 제외하므로 검토 후 필요하면 `git add -f evidence/screenshots/live-ai.png`로 명시적으로 추가합니다.
 
@@ -38,3 +38,4 @@
 - 실제 AI 화면 증빙 파일:
 
 완료되지 않은 항목을 완료로 바꾸거나 모의 응답을 실제 AI 결과로 표시하지 않습니다.
+
