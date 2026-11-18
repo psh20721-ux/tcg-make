@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 const root=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const catalog=JSON.parse((await fs.readFile(path.join(root,'public/data/catalog.json'),'utf8')).replace(/^\uFEFF/,''));
 const origin='http://127.0.0.1:5311';
-const server=spawn(process.env.PYTHON||'python',['scripts/serve.py','--port','5311'],{cwd:root,env:{...process.env,OPENAI_API_KEY:'',AI_ENABLED:'true',ALLOWED_ORIGIN:''},windowsHide:true,stdio:'pipe'});
+const server=spawn(process.env.PYTHON||'python',['scripts/serve.py','--port','5311'],{cwd:root,env:{...process.env,GEMINI_API_KEY:'',AI_ENABLED:'true',ALLOWED_ORIGIN:''},windowsHide:true,stdio:'pipe'});
 let output='';server.stdout.on('data',s=>output+=s);server.stderr.on('data',s=>output+=s);
 let browser;
 try{
@@ -28,7 +28,7 @@ try{
  await page.locator('#ai-consent').check();await page.getByRole('button',{name:/내게 맞는 덱 상담하기/}).click();await page.getByRole('heading',{name:'상담을 완료하지 못했어요'}).waitFor();assert.ok((await page.locator('#form-error').innerText()).includes('연결을 준비'));
  await page.screenshot({path:path.join(root,'evidence/screenshots/ai-not-configured.png'),fullPage:true});
  await page.getByRole('button',{name:'결과 예시 보기 ↗'}).click();assert.ok((await page.locator('.result-badge').innerText()).includes('실제 AI 호출 아님'));
- const mock={mode:'test',summary:'검증용 모의 API 응답입니다. 실제 OpenAI 호출 결과가 아닙니다.',recommendations:[{deckId:d.id,reason:'차분한 운영과 강철 속성 선호에 맞춰 등록 덱을 살펴볼 수 있습니다.',playSteps:d.strategy,cautions:d.weaknesses}],unknowns:['현재 티어·승률과 정확한 보유 수량은 미확인입니다.'],dataCheckedAt:'2026-10-30'};
+ const mock={mode:'test',summary:'검증용 모의 API 응답입니다. 실제 Gemini 호출 결과가 아닙니다.',recommendations:[{deckId:d.id,reason:'차분한 운영과 강철 속성 선호에 맞춰 등록 덱을 살펴볼 수 있습니다.',playSteps:d.strategy,cautions:d.weaknesses}],unknowns:['현재 티어·승률과 정확한 보유 수량은 미확인입니다.'],dataCheckedAt:'2026-10-30'};
  await page.route('**/api/recommend',async route=>{if(route.request().method()==='POST'){const input=route.request().postDataJSON();assert.equal(input.consent,true);await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(mock)});}else await route.continue();});
  await page.locator('#coach-type').selectOption('강철');await page.locator('#owned-cards').fill('멜탄, 멜메탈 ex');await page.locator('#coach-style').selectOption('defensive');await page.getByRole('button',{name:/내게 맞는 덱 상담하기/}).click();await page.getByText('검증용 모의 응답 · 실제 AI 호출 아님',{exact:true}).waitFor();assert.equal(await page.locator('.recommendation').count(),1);assert.ok((await page.locator('.source-line').innerText()).includes('2026-10-30'));await page.screenshot({path:path.join(root,'evidence/screenshots/ai-mock-flow.png'),fullPage:true});
  mock.recommendations[0].reason='<img src=x onerror="window.badInjection=true">';await page.getByRole('button',{name:/내게 맞는 덱 상담하기/}).click();await page.getByText(mock.recommendations[0].reason,{exact:true}).waitFor();assert.equal(await page.locator('img[src=x]').count(),0);assert.equal(await page.evaluate(()=>Boolean(window.badInjection)),false);
@@ -39,3 +39,4 @@ try{
  assert.deepEqual(errors,[]);assert.deepEqual(external,[]);
  const result={testedAt:'2026-11-16',result:'passed',screens:[1440,768,390],checks:['4-menu navigation','7 actual twenty-card recipes','search/type/favorite persistence','empty input/consent/real 503','mock API success with explicit test badge','upstream timeout message and retry','text-only output prevents HTML execution','source dates','no overflow','no external browser requests','no page errors'],liveAiVerified:false,deployedUrlVerified:false};await fs.writeFile(path.join(root,'evidence/browser-results.json'),JSON.stringify(result,null,2)+'\n');console.log('PASS: navigation, 20-card lists, search/filter/favorites, input errors, real missing-key 503, labelled mock success, timeout retry, XSS text rendering, sources, responsive screens, no external requests. Live AI and deployed URL: NOT verified.');
 }finally{await browser?.close();server.kill();}
+
