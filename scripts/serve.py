@@ -17,7 +17,7 @@ def load_env():
             line=line.strip()
             if not line or line.startswith('#') or '=' not in line:continue
             key,value=line.split('=',1);key=key.strip()
-            if key in {'OPENAI_API_KEY','OPENAI_MODEL','AI_ENABLED','ALLOWED_ORIGIN'}:
+            if key in {'GEMINI_API_KEY','GEMINI_MODEL','AI_ENABLED','ALLOWED_ORIGIN'}:
                 os.environ.setdefault(key,value.strip().strip('\"\''))
 
 class LocalHandler(SimpleHTTPRequestHandler):
@@ -46,3 +46,4 @@ def main():
     except KeyboardInterrupt:pass
     finally:server.server_close()
 if __name__=='__main__':main()
+
