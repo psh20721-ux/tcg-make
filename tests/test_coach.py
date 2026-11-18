@@ -37,23 +37,23 @@ class CoachTests(unittest.TestCase):
  def test_valid_reply_has_original_twenty_cards_and_sources(self):
   r=recommend(user(),caller=lambda u,ds:(answer(ds),'test-model'));d=r['recommendations'][0]['deck'];self.assertEqual(sum(c['quantity'] for c in d['cards']),20);self.assertTrue(d['sourceUrl'].startswith('https://'));self.assertIsNone(d['tier'])
  def test_missing_key_and_disabled_never_contact_provider(self):
-  for env,code in [({'OPENAI_API_KEY':'','AI_ENABLED':'true'},'not_configured'),({'OPENAI_API_KEY':'test','AI_ENABLED':'false'},'disabled')]:
+  for env,code in [({'GEMINI_API_KEY':'','AI_ENABLED':'true'},'not_configured'),({'GEMINI_API_KEY':'test','AI_ENABLED':'false'},'disabled')]:
    with patch.dict(os.environ,env),patch('urllib.request.urlopen') as call,self.assertRaises(CoachError) as cm:provider_call(validate_input(user()),catalog()['decks'])
    self.assertEqual(cm.exception.code,code);call.assert_not_called()
  def test_rest_contract(self):
-  ds=candidates(validate_input(user()));p={'status':'completed','output':[{'type':'message','content':[{'type':'output_text','text':json.dumps(answer(ds))}]}]}
-  with patch.dict(os.environ,{'OPENAI_API_KEY':'test-not-a-real-key','AI_ENABLED':'true'}),patch('urllib.request.urlopen',return_value=Reply(p)) as call:a,model=provider_call(validate_input(user()),ds)
-  req=call.call_args.args[0];body=json.loads(req.data);self.assertEqual(req.full_url,'https://api.openai.com/v1/responses');self.assertFalse(body['store']);self.assertTrue(body['text']['format']['strict']);self.assertEqual(call.call_args.kwargs['timeout'],25);self.assertEqual(a,answer(ds))
+  ds=candidates(validate_input(user()));p={'candidates':[{'finishReason':'STOP','content':{'parts':[{'text':json.dumps(answer(ds))}]}}]}
+  with patch.dict(os.environ,{'GEMINI_API_KEY':'test-not-a-real-key','AI_ENABLED':'true'}),patch('urllib.request.urlopen',return_value=Reply(p)) as call:a,model=provider_call(validate_input(user()),ds)
+  req=call.call_args.args[0];body=json.loads(req.data);self.assertTrue(req.full_url.startswith('https://generativelanguage.googleapis.com/v1beta/models/'));self.assertEqual(body['generationConfig']['responseMimeType'],'application/json');self.assertNotIn('test-not-a-real-key',req.full_url);self.assertEqual(req.get_header('X-goog-api-key'),'test-not-a-real-key');self.assertEqual(call.call_args.kwargs['timeout'],25);self.assertEqual(a,answer(ds))
  def test_upstream_errors_are_sanitized(self):
-  for err,code,status in [(urllib.error.HTTPError('url',401,'secret-details',{},None),'provider_error',502),(urllib.error.HTTPError('url',429,'quota',{},None),'provider_busy',503),(socket.timeout(),'timeout',504)]:
-   with patch.dict(os.environ,{'OPENAI_API_KEY':'private-test-key','AI_ENABLED':'true'}),patch('urllib.request.urlopen',side_effect=err),self.assertRaises(CoachError) as cm:provider_call(validate_input(user()),catalog()['decks'])
+  for err,code,status in [(urllib.error.HTTPError('url',401,'secret-details',{},None),'provider_auth',503),(urllib.error.HTTPError('url',429,'quota',{},None),'provider_busy',503),(socket.timeout(),'timeout',504)]:
+   with patch.dict(os.environ,{'GEMINI_API_KEY':'private-test-key','AI_ENABLED':'true'}),patch('urllib.request.urlopen',side_effect=err),self.assertRaises(CoachError) as cm:provider_call(validate_input(user()),catalog()['decks'])
    self.assertEqual((cm.exception.code,cm.exception.status),(code,status));self.assertNotIn('private-test-key',str(cm.exception));self.assertNotIn('secret-details',str(cm.exception))
  def test_non_object_provider_envelope_is_rejected(self):
-  with patch.dict(os.environ,{'OPENAI_API_KEY':'test','AI_ENABLED':'true'}),patch('urllib.request.urlopen',return_value=Reply([])),self.assertRaises(CoachError) as cm:provider_call(validate_input(user()),catalog()['decks'])
+  with patch.dict(os.environ,{'GEMINI_API_KEY':'test','AI_ENABLED':'true'}),patch('urllib.request.urlopen',return_value=Reply([])),self.assertRaises(CoachError) as cm:provider_call(validate_input(user()),catalog()['decks'])
   self.assertEqual(cm.exception.code,'invalid_response')
  def test_refusal_and_incomplete(self):
-  for p,code in [({'status':'incomplete'},'incomplete'),({'status':'completed','output':[{'type':'message','content':[{'type':'refusal','refusal':'no'}]}]},'refused')]:
-   with patch.dict(os.environ,{'OPENAI_API_KEY':'test','AI_ENABLED':'true'}),patch('urllib.request.urlopen',return_value=Reply(p)),self.assertRaises(CoachError) as cm:provider_call(validate_input(user()),catalog()['decks'])
+  for p,code in [({'candidates':[{'finishReason':'MAX_TOKENS'}]},'incomplete'),({'promptFeedback':{'blockReason':'SAFETY'}},'refused')]:
+   with patch.dict(os.environ,{'GEMINI_API_KEY':'test','AI_ENABLED':'true'}),patch('urllib.request.urlopen',return_value=Reply(p)),self.assertRaises(CoachError) as cm:provider_call(validate_input(user()),catalog()['decks'])
    self.assertEqual(cm.exception.code,code)
 class HTTPTests(unittest.TestCase):
  @classmethod
@@ -74,16 +74,16 @@ class HTTPTests(unittest.TestCase):
   with patch.object(endpoint,'recommend',return_value=result):status,body=self.post(json.dumps(user()).encode())
   self.assertEqual(status,200);self.assertEqual(sum(c['quantity'] for c in body['recommendations'][0]['deck']['cards']),20)
  def test_health_never_exposes_key(self):
-  with patch.dict(os.environ,{'OPENAI_API_KEY':'secret-local-test','AI_ENABLED':'true'}):
+  with patch.dict(os.environ,{'GEMINI_API_KEY':'secret-local-test','AI_ENABLED':'true'}):
    with urllib.request.urlopen(self.base+'/api/recommend') as r:body=json.load(r)
   self.assertEqual(body,{'ready':True,'mode':'live'})
  def test_missing_key_is_503(self):
-  with patch.dict(os.environ,{'OPENAI_API_KEY':'','AI_ENABLED':'true'}):status,body=self.post(json.dumps(user()).encode())
+  with patch.dict(os.environ,{'GEMINI_API_KEY':'','AI_ENABLED':'true'}):status,body=self.post(json.dumps(user()).encode())
   self.assertEqual(status,503);self.assertEqual(body['error']['code'],'not_configured')
  def test_cross_origin_and_large_request(self):
   self.assertEqual(self.post(b'{}',{'Content-Type':'application/json','Origin':'https://other.example'})[0],403);self.assertEqual(self.post(b' '*8193)[0],413)
  def test_rate_limit(self):
-  with patch.dict(os.environ,{'OPENAI_API_KEY':'','AI_ENABLED':'true'}):
+  with patch.dict(os.environ,{'GEMINI_API_KEY':'','AI_ENABLED':'true'}):
    for _ in range(5):self.post(json.dumps(user()).encode())
    status,_=self.post(json.dumps(user()).encode())
   self.assertEqual(status,429)
@@ -93,3 +93,4 @@ class HTTPTests(unittest.TestCase):
    self.assertEqual(cm.exception.code,404)
   with urllib.request.urlopen(self.base+'/') as r:self.assertIn('포켓 덱 코치',r.read().decode('utf-8-sig'))
 if __name__=='__main__':unittest.main()
+
