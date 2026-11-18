@@ -13,7 +13,7 @@ sequenceDiagram
  participant U as 방문자
  participant J as 브라우저 JavaScript
  participant P as Python /api/recommend
- participant A as OpenAI Responses API
+ participant A as Google Gemini API
  U->>J: 질문·보유 카드·선호·동의
  J->>J: 빈 입력과 동의 확인
  J->>P: fetch POST JSON
@@ -35,7 +35,7 @@ sequenceDiagram
 
 ## 왜 API 키는 환경 변수인가요?
 
-브라우저의 HTML/JS와 네트워크 요청은 방문자가 볼 수 있습니다. 거기에 키가 있으면 다른 사람이 키를 사용해 비용을 발생시킬 수 있습니다. 이 서비스는 브라우저가 같은 도메인의 Python 함수만 호출하고, Python이 `OPENAI_API_KEY`를 읽어 OpenAI 요청의 Authorization 헤더에 붙입니다. 키를 브라우저 응답·로그·GitHub에 담지 않습니다. `.env.local`은 개발 편의 파일이며 `.gitignore`에 포함됩니다.
+브라우저의 HTML/JS와 네트워크 요청은 방문자가 볼 수 있습니다. 거기에 키가 있으면 다른 사람이 키를 사용해 비용을 발생시킬 수 있습니다. 이 서비스는 브라우저가 같은 도메인의 Python 함수만 호출하고, Python이 `GEMINI_API_KEY`를 읽어 Google Gemini 요청의 x-goog-api-key 헤더에 붙입니다. 키를 브라우저 응답·로그·GitHub에 담지 않습니다. `.env.local`은 개발 편의 파일이며 `.gitignore`에 포함됩니다.
 
 ## 로컬과 배포 환경
 
@@ -57,9 +57,10 @@ sequenceDiagram
 
 ## 공식 참고
 
-- [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses)
-- [GPT-5 mini 모델](https://developers.openai.com/api/docs/models/gpt-5-mini)
+- [Gemini 구조화 출력](https://ai.google.dev/gemini-api/docs/structured-output)
+- [Gemini 모델](https://aistudio.google.com/docs/models/gemini-3.5-flash-lite)
 - [Vercel Python /api 함수](https://vercel.com/docs/functions/runtimes/python/api-directory)
 - [Vercel Python 런타임](https://vercel.com/docs/functions/runtimes/python)
 
 문서 확인 2026-11-16. API/플랫폼 변경 시 공식 문서와 설정을 다시 대조합니다.
+
