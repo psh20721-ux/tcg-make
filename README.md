@@ -6,7 +6,7 @@
 - 배포 URL: https://tcg-make.vercel.app/
 - AI 상담: https://tcg-make.vercel.app/#coach
 - 로컬 주소: http://127.0.0.1:5310/
-- 실제 AI 호출 검증: **2026-11-18 사용자가 배포 사이트에서 Gemini 상담 결과 출력을 확인함. 자동화된 배포 환경 재검증은 별도.**
+- 실제 AI 호출 검증: **2026-11-18 사용자 실행 및 데스크톱·모바일 실 응답 스크린샷 확인. 자동화된 배포 환경 전체 검증은 별도.**
 - 코드 작성/과제 선별: 2026-11-16 / 게임 자료 확인: 2026-10-30
 
 ## 기능
@@ -71,7 +71,7 @@ Codespaces에서는 `python3 scripts/serve.py`로 실행하고 Ports 탭에서 5
 
 [배포 안내](docs/DEPLOYMENT.md)를 순서대로 진행합니다. 과제 폴더 **내용을 저장소 최상위**에 두고 GitHub에 올립니다. Vercel에서 이 저장소를 Import하고 Framework `Other`, Output Directory `public`, 별도 Build Command 없이 배포합니다. `api/recommend.py`와 `backend/**`가 함수에 함께 포함되도록 설정했습니다.
 
-현재 실제 저장소 업로드와 공개 배포는 완료하지 않았습니다. 사용자가 완성 ZIP을 받아 대상 저장소의 Codespaces에서 직접 업로드하는 방식을 선택했습니다. 자세한 업로드·커밋·Vercel 설정은 배포 안내를 따릅니다.
+GitHub 코드 업로드와 Vercel 배포를 완료했습니다. 사용자가 배포 주소에서 Gemini 상담을 실행했고 실제 데스크톱·모바일 결과 화면을 제공했습니다. 제출 자료 안내는 [제출 안내](docs/SUBMISSION_GUIDE.md)를 참고하세요.
 
 ## 테스트
 
