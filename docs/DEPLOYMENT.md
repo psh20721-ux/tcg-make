@@ -28,7 +28,7 @@ python3 -m venv .venv
 cp .env.example .env.local
 ```
 
-편집기로 `.env.local`을 열어 `OPENAI_API_KEY`를 직접 넣으세요. 터미널에 키를 출력하거나 채팅에 붙여 넣지 마세요. 모델 접근 권한과 API 프로젝트 사용 한도를 확인합니다.
+편집기로 `.env.local`을 열어 `GEMINI_API_KEY`를 직접 넣으세요. 터미널에 키를 출력하거나 채팅에 붙여 넣지 마세요. 모델 접근 권한과 API 프로젝트 사용 한도를 확인합니다.
 
 ```bash
 .venv/bin/python scripts/serve.py
@@ -71,7 +71,7 @@ git push origin main
 2. `psh20721-ux/tcg-make`에 접근을 허용하고 Import합니다.
 3. 저장소 최상위에 파일을 풀었다면 Root Directory는 기본값으로 둡니다.
 4. Framework Preset은 `Other`, Output Directory는 `public`입니다. 별도 빌드 명령은 필요 없습니다. `vercel.json`이 설정을 제공합니다.
-5. Environment Variables에 `OPENAI_API_KEY`, `OPENAI_MODEL=gpt-5-mini`, `AI_ENABLED=true`를 넣습니다. Production 환경 적용 여부를 확인합니다.
+5. Environment Variables에 `GEMINI_API_KEY`, `GEMINI_MODEL=gemini-3.5-flash-lite`, `AI_ENABLED=true`를 넣습니다. Production 환경 적용 여부를 확인합니다.
 6. Deploy를 누릅니다. 완료된 실제 `https://...vercel.app` 주소를 엽니다.
 7. 필요하면 `ALLOWED_ORIGIN`을 그 주소로 설정한 후 재배포합니다. 비워두면 요청 Origin의 host와 요청 Host가 같은지 검사합니다.
 
@@ -82,7 +82,7 @@ git push origin main
 - `/`, `/#decks`, `/#coach`, `/#sources` 이동.
 - 모바일 화면, 검색·속성·즐겨찾기, 20장 카드 목록.
 - 빈 질문과 전송 동의 안내.
-- **실제 키로 입력 → OpenAI → 결과**가 끝까지 이어지는지.
+- **실제 키로 입력 → Google Gemini → 결과**가 끝까지 이어지는지.
 - 결과의 `AI 상담 결과` 표시, 등록된 덱, 출처와 확인 날짜.
 - 직접 `/api/recommend`를 GET하면 `ready: true`인지 (키 값은 나오지 않음).
 - 실제 AI 동작 장면을 개인정보·키 없이 캡처해 `evidence/screenshots/live-ai.png`로 보관.
@@ -107,3 +107,4 @@ API 호출에는 비용이 발생할 수 있습니다. 앱의 요청 제한은 �
 원인을 수정한 뒤 테스트 → 커밋 → 푸시 → Vercel 자동 재배포 → 동일 조건 재검증 순서로 진행합니다.
 
 공식 참고: https://vercel.com/docs/functions/runtimes/python/api-directory · https://vercel.com/docs/functions/runtimes/python · https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses
+
