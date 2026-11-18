@@ -40,7 +40,7 @@ class handler(BaseHTTPRequestHandler):
         except (BrokenPipeError,ConnectionResetError):pass
 
     def do_GET(self):
-        ready=bool(os.environ.get('OPENAI_API_KEY','').strip()) and os.environ.get('AI_ENABLED','true').lower()=='true'
+        ready=bool(os.environ.get('GEMINI_API_KEY','').strip()) and os.environ.get('AI_ENABLED','true').lower()=='true'
         self.send_json(200,{'ready':ready,'mode':'live' if ready else 'unconfigured'})
 
     def do_POST(self):
@@ -69,3 +69,4 @@ class handler(BaseHTTPRequestHandler):
     def do_PUT(self):self.do_OPTIONS()
     def do_DELETE(self):self.do_OPTIONS()
     def log_message(self,*args):pass
+
