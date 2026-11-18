@@ -12,7 +12,7 @@
 
 1. 홈: 서비스 소개와 사용 흐름.
 2. 덱 탐색: 실제 20장 제출 목록 7종, 덱/카드 검색, 속성 필터, 브라우저 즐겨찾기, 운영·강점·약점·출처·확인일.
-3. AI 상담: 질문/보유 카드/선호 속성/플레이 스타일 입력 → Python API → OpenAI Responses API → 추천 이유·운영 제안·주의점·미확인 항목 출력.
+3. AI 상담: 질문/보유 카드/선호 속성/플레이 스타일 입력 → Python API → Google Gemini API → 추천 이유·운영 제안·주의점·미확인 항목 출력.
 4. 출처 안내: 원본 링크, 자료 범위, 개인정보 처리와 권리 고지.
 
 결과 예시는 실제 AI 호출 없이 보는 고정 샘플입니다. 자동 테스트의 모의 API 응답에도 테스트 표시가 붙습니다. 둘 다 실제 AI 기능 동작 증빙을 대신하지 않습니다.
@@ -47,7 +47,7 @@ python --version
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 Copy-Item .env.example .env.local
-# .env.local을 편집기로 열어 OPENAI_API_KEY 값을 직접 설정
+# .env.local을 편집기로 열어 GEMINI_API_KEY 값을 직접 설정
 .\.venv\Scripts\python.exe scripts/serve.py
 ```
 
@@ -59,12 +59,12 @@ Codespaces에서는 `python3 scripts/serve.py`로 실행하고 Ports 탭에서 5
 
 | 이름 | 용도 | 필수 |
 |---|---|---|
-| `OPENAI_API_KEY` | OpenAI 프로젝트 API 키, 서버에서만 읽음 | 실제 AI 상담에 필요 |
-| `OPENAI_MODEL` | Responses/Structured Outputs 호환 모델. 기본 `gpt-5-mini` | 선택 |
+| `GEMINI_API_KEY` | Google Gemini 프로젝트 API 키, 서버에서만 읽음 | 실제 AI 상담에 필요 |
+| `GEMINI_MODEL` | Gemini JSON 구조화 출력 호환 모델. 기본 `gemini-3.5-flash-lite` | 선택 |
 | `AI_ENABLED` | `true`일 때 실제 호출. `false`로 일시 중지 | 기본 true |
 | `ALLOWED_ORIGIN` | 선택적으로 정확한 서비스 origin 지정 | 선택 |
 
-로컬에서는 `.env.local`을 개발 서버가 읽습니다. Vercel에서는 프로젝트 Settings → Environment Variables에 설정하고 **재배포**하세요. 키를 JavaScript, HTML, GitHub, 스크린샷, 채팅에 넣지 마세요. ChatGPT 구독과 API 프로젝트의 사용 권한/결제·한도는 별개로 확인해야 합니다. 모델 이름을 바꾸려면 현재 서버의 Responses JSON Schema 및 reasoning 설정 호환성을 확인하세요.
+로컬에서는 `.env.local`을 개발 서버가 읽습니다. Vercel에서는 프로젝트 Settings → Environment Variables에 설정하고 **재배포**하세요. 키를 JavaScript, HTML, GitHub, 스크린샷, 채팅에 넣지 마세요. Google AI Studio에서 프로젝트가 Free Tier인지 확인하세요. 무료 한도와 모델 접근 권한은 계정별로 다를 수 있습니다. 모델을 바꾸려면 Gemini JSON 구조화 출력 지원 여부를 확인하세요.
 
 ## GitHub · Vercel 준비
 
@@ -91,7 +91,7 @@ npm run test:browser
 
 ## 공개 운영 범위
 
-- 일반 사용자 입력을 외부 AI에 전송하기 전 동의를 받으며 상담 내용은 애플리케이션에서 별도 저장하지 않습니다. OpenAI/Vercel 자체 처리·운영 로그 정책은 별개입니다. Responses 요청은 `store: false`입니다.
+- 일반 사용자 입력을 외부 AI에 전송하기 전 동의를 받으며 상담 내용은 애플리케이션에서 별도 저장하지 않습니다. Google Gemini/Vercel 자체 처리·운영 로그 정책은 별개입니다. Gemini 무료 구간에서는 입력과 출력이 Google 제품 개선에 사용될 수 있습니다.
 - 서버는 8KB 본문/800자 질문 제한, 25초 제공자 timeout, 응답 ID/자료 검증과 비밀정보를 제외한 오류 메시지를 사용합니다. 브라우저 timeout은 35초입니다.
 - 1분 5회 제한은 **프로세스별 임시 제한**입니다. 서버리스 다중 인스턴스에서 전역 사용량·비용을 보장하지 않습니다. 공개 전 Vercel WAF/플랫폼 이용 제한과 API 프로젝트 한도를 설정하고, 필요시 영속적인 요청 제한을 추가하세요. 단순 Origin 검사는 인증 수단이 아닙니다.
 - AI는 등록 덱에서 제안하며 현재 티어·실전 승률·최적 수순을 확인하지 않습니다. 출력 내용은 원본과 대조해야 합니다.
@@ -107,3 +107,4 @@ npm run test:browser
 - 스크린샷: `evidence/screenshots/` (파일명과 모의/실제 여부는 체크리스트에 명시)
 
 향후에는 실제 AI 응답 평가, 추가 검증 자료, 확인 가능한 소유 수량 입력, 영속적인 비용/요청 제한을 확장할 수 있습니다.
+
