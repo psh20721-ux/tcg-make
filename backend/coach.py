@@ -2,6 +2,7 @@
 from __future__ import annotations
 import json
 import os
+import re
 import socket
 import urllib.error
 import urllib.request
@@ -10,7 +11,7 @@ from pathlib import Path
 
 CATALOG_PATH = Path(__file__).with_name('catalog.json')
 MAX_BODY = 8192
-DEFAULT_MODEL = 'gpt-5-mini'
+DEFAULT_MODEL = 'gemini-3.5-flash-lite'
 
 class CoachError(Exception):
     def __init__(self, code, message, status=400):
@@ -64,15 +65,17 @@ INSTRUCTIONS='''당신은 한국어 포켓 덱 코치입니다. 제공된 catalo
 출처 URL과 카드 목록은 서버가 연결하므로 본문에 URL/HTML/마크다운 표를 만들지 마세요. 모든 설명은 간결한 한국어이며 추천을 검증된 최적해라고 표현하지 않습니다.'''
 
 def provider_call(user, decks):
-    key=os.environ.get('OPENAI_API_KEY','').strip()
+    key=os.environ.get('GEMINI_API_KEY','').strip()
     if os.environ.get('AI_ENABLED','true').lower()!='true':
         raise CoachError('disabled','AI 상담을 잠시 쉬고 있습니다. 덱 탐색을 이용해 주세요.',503)
     if not key:
         raise CoachError('not_configured','AI 상담 연결을 준비 중입니다. 지금은 덱 탐색과 결과 예시를 이용해 주세요.',503)
-    model=os.environ.get('OPENAI_MODEL',DEFAULT_MODEL).strip() or DEFAULT_MODEL
+    model=os.environ.get('GEMINI_MODEL',DEFAULT_MODEL).strip() or DEFAULT_MODEL
     context=[{k:d[k] for k in ('id','name','type','style','description','strategy','strengths','weaknesses','checkedAt','publishedAt','cards')} for d in decks]
-    payload={'model':model,'store':False,'instructions':INSTRUCTIONS,'input':json.dumps({'user':user,'catalog':context},ensure_ascii=False),'reasoning':{'effort':'low'},'max_output_tokens':2200,'text':{'format':{'type':'json_schema','name':'deck_consultation','strict':True,'schema':output_schema([d['id'] for d in decks])}}}
-    request=urllib.request.Request('https://api.openai.com/v1/responses',data=json.dumps(payload,ensure_ascii=False).encode('utf-8'),headers={'Authorization':'Bearer '+key,'Content-Type':'application/json'},method='POST')
+    if not re.fullmatch(r'[a-zA-Z0-9._-]+',model):
+        raise CoachError('invalid_model','Gemini 모델 이름 설정을 확인해 주세요.',503)
+    payload={'systemInstruction':{'parts':[{'text':INSTRUCTIONS}]},'contents':[{'role':'user','parts':[{'text':json.dumps({'user':user,'catalog':context},ensure_ascii=False)}]}],'generationConfig':{'maxOutputTokens':4096,'responseMimeType':'application/json','responseJsonSchema':output_schema([d['id'] for d in decks])}}
+    request=urllib.request.Request('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent',data=json.dumps(payload,ensure_ascii=False).encode('utf-8'),headers={'x-goog-api-key':key,'Content-Type':'application/json'},method='POST')
     try:
         with urllib.request.urlopen(request,timeout=25) as response:
             raw=response.read(262145)
@@ -83,18 +86,33 @@ def provider_call(user, decks):
         raise CoachError('timeout','응답이 늦어지고 있습니다. 잠시 후 다시 시도해 주세요.',504) from None
     except urllib.error.HTTPError as error:
         if error.code==429:
-            raise CoachError('provider_busy','AI 요청이 몰리거나 이용 한도에 도달했습니다. 잠시 후 다시 시도해 주세요.',503) from None
-        raise CoachError('provider_error','AI 연결에 문제가 생겼습니다. 잠시 후 다시 시도해 주세요.',502) from None
+            raise CoachError('provider_busy','Gemini 무료 사용량 또는 요청 제한에 도달했습니다. AI Studio에서 한도를 확인하고 잠시 후 다시 시도해 주세요.',503) from None
+        if error.code in (401,403):
+            raise CoachError('provider_auth','Gemini API 키 또는 프로젝트 접근 권한을 확인해 주세요.',503) from None
+        if error.code==404:
+            raise CoachError('provider_model','설정한 Gemini 모델을 사용할 수 없습니다. GEMINI_MODEL과 프로젝트의 모델 접근 권한을 확인해 주세요.',503) from None
+        if error.code==400:
+            raise CoachError('provider_request','Gemini 요청 설정을 확인해 주세요. 키 유효성과 모델의 JSON 출력 지원 여부를 확인하세요.',502) from None
+        raise CoachError('provider_error','Gemini 연결에 문제가 생겼습니다. 잠시 후 다시 시도해 주세요.',502) from None
     except (urllib.error.URLError,OSError,ValueError):
         raise CoachError('provider_error','AI 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.',502) from None
     if not isinstance(reply,dict):
         raise CoachError('invalid_response','답변 형식을 확인하지 못했습니다. 다시 시도해 주세요.',502)
-    if reply.get('status')!='completed':
-        raise CoachError('incomplete','답변을 끝까지 만들지 못했습니다. 질문을 간단히 바꿔 다시 시도해 주세요.',502)
-    blocks=[b for item in reply.get('output',[]) if item.get('type')=='message' for b in item.get('content',[])]
-    if any(b.get('type')=='refusal' for b in blocks):
+    if reply.get('promptFeedback',{}).get('blockReason'):
         raise CoachError('refused','이 질문에는 답변하기 어렵습니다. 카드나 덱 운영에 관한 질문으로 바꿔 주세요.',422)
-    text=''.join(b.get('text','') for b in blocks if b.get('type')=='output_text')
+    choices=reply.get('candidates',[])
+    if not isinstance(choices,list) or not choices or not isinstance(choices[0],dict):
+        raise CoachError('invalid_response','Gemini 답변을 확인하지 못했습니다. 다시 시도해 주세요.',502)
+    choice=choices[0]
+    reason=choice.get('finishReason')
+    if reason in ('SAFETY','RECITATION','BLOCKLIST','PROHIBITED_CONTENT','SPII'):
+        raise CoachError('refused','이 질문에는 답변하기 어렵습니다. 카드나 덱 운영에 관한 질문으로 바꿔 주세요.',422)
+    if reason!='STOP':
+        raise CoachError('incomplete','답변을 끝까지 만들지 못했습니다. 질문을 간단히 바꿔 다시 시도해 주세요.',502)
+    parts=choice.get('content',{}).get('parts',[])
+    if not isinstance(parts,list) or any(not isinstance(p,dict) for p in parts):
+        raise CoachError('invalid_response','Gemini 답변 형식을 확인하지 못했습니다.',502)
+    text=''.join(p['text'] for p in parts if isinstance(p.get('text'),str) and not p.get('thought'))
     try:
         return json.loads(text),model
     except (ValueError,TypeError):
@@ -126,3 +144,4 @@ def recommend(value, caller=provider_call):
     result=validate_output(answer,decks)
     result.update({'mode':'live','model':model,'generatedAt':datetime.now(timezone.utc).isoformat(),'dataCheckedAt':catalog()['lastVerified'],'notice':'AI가 작성한 제안입니다. 현재 티어·실전 성능·최적 수순은 미확인입니다.'})
     return result
+
