@@ -16,12 +16,26 @@ class Reply:
  def __exit__(self,*a):pass
  def read(self,n):return self.body[:n]
 class CoachTests(unittest.TestCase):
+ def test_new_recipes_match_public_evidence_and_keep_ratings_separate(self):
+  evidence=json.loads((ROOT/'docs/new-recipe-evidence.json').read_text(encoding='utf-8'))['selected']
+  new=[d for d in catalog()['decks'] if d['id'].startswith('verified-')]
+  self.assertEqual(len(new),3)
+  for d,e in zip(new,evidence):
+   expected={('PROMO-A' if c['set']=='P-A' else c['set'])+'-'+c['number']:c['count'] for kind in ('pokemon','trainer') for c in e['decklist'][kind]}
+   self.assertEqual({c['id']:c['quantity'] for c in d['cards']},expected)
+   self.assertIsNone(d['tier']);self.assertIsNone(d['selfRating'])
+   self.assertEqual(d['checkedAt'],'2026-11-18')
+   self.assertIn(d['guideRating']['tier'],(1,2))
+   self.assertEqual(d['guideRating']['sourceName'],'GameWith')
+   self.assertIn('미확인',d['format'])
+  ids={d['id'] for d in candidates(validate_input(user(question='메가나무킹 ex 덱 운영을 알려줘.')))}
+  self.assertIn('verified-sceptile-greninja',ids)
  def test_required_consent_and_length(self):
   for p,code in [(user(question=' '),'empty_question'),(user(consent=False),'consent_required'),(user(question='a'*801),'invalid_input'),(user(type='bad'),'invalid_type')]:
    with self.subTest(code=code),self.assertRaises(CoachError) as cm:validate_input(p)
    self.assertEqual(cm.exception.code,code)
  def test_real_recipes_and_public_copy(self):
-  self.assertEqual(catalog(),json.loads((ROOT/'public/data/catalog.json').read_text(encoding='utf-8-sig')));self.assertEqual(len(catalog()['decks']),7)
+  self.assertEqual(catalog(),json.loads((ROOT/'public/data/catalog.json').read_text(encoding='utf-8-sig')));self.assertEqual(len(catalog()['decks']),10)
   for d in catalog()['decks']:
    self.assertIsNone(d['tier']);self.assertEqual(sum(c['quantity'] for c in d['cards']),20);self.assertTrue(all(c['quantity'] in (1,2) for c in d['cards']))
  def test_schema_only_allows_filtered_server_ids(self):

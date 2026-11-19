@@ -1,5 +1,5 @@
 {
-  "testedAt": "2026-11-16",
+  "testedAt": "2026-11-19",
   "result": "passed",
   "screens": [
     1440,
@@ -8,7 +8,7 @@
   ],
   "checks": [
     "4-menu navigation",
-    "7 actual twenty-card recipes",
+    "10 actual twenty-card recipes",
     "search/type/favorite persistence",
     "empty input/consent/real 503",
     "mock API success with explicit test badge",
@@ -22,3 +22,4 @@
   "liveAiVerified": false,
   "deployedUrlVerified": false
 }
+
